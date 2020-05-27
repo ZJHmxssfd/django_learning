@@ -2,7 +2,17 @@ from django.shortcuts import render
 from django.shortcuts import redirect
 from . import models
 from . import forms
+import hashlib
 # Create your views here.
+
+
+def hash_code(s, salt='mysite'):
+    h = hashlib.sha256()
+    s += salt
+    h.update(s.encode())  # update方法只接收bytes类型
+    return h.hexdigest()
+
+
 def index(request):
     if not request.session.get('is_login', None):
         return redirect('/login/')
@@ -32,7 +42,7 @@ def login(request):
                 # 我们可以偷懒的将这作为render函数的数据字典参数值，就不用费劲去构造一个
                 # 形如{'message': message, 'login_form': login_form}的字典了，但可能造成数据冗余降低效率
 
-            if user.password == password:
+            if user.password == hash_code(password):
                 request.session['is_login'] = True
                 request.session['user_id'] = user.id
                 request.session['user_name'] = user.name
@@ -76,7 +86,7 @@ def register(request):
 
                 new_user = models.User()
                 new_user.name = username
-                new_user.password = password1
+                new_user.password = hash_code(password1)
                 new_user.email = email
                 new_user.sex = sex
                 new_user.save()
